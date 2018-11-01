@@ -8,7 +8,7 @@ $(function() {
     Vue.filter('highlightMessage', function (value) {
         if (!value) return ''
         value = value.toString()
-        return value.replace(/(__.*__)/g,'<span class="message-insert">$1</span>')
+        return value.replace(/(__.*?__)/g,'<span class="message-insert">$1</span>')
     })
 
 
