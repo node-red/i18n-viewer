@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+        <title>i18n viewer</title>
+        <link href='//fonts.googleapis.com/css?family=Roboto+Slab:400,700,300,100' rel='stylesheet' type='text/css'>
+        <link href='//fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet' type='text/css'>
+        <link href="//netdna.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet">
+        <link href="/css/simplegrid.css" rel="stylesheet" media="screen">
+        <link href="/css/style.css" rel="stylesheet" media="screen">
+        <link href="/css/front.css" rel="stylesheet" media="screen">
+        <link href="/css/docs.css" rel="stylesheet" media="screen">
+        <link href="/css/blog.css" rel="stylesheet" media="screen">
+        <link href="/css/syntax.css" rel="stylesheet" media="screen">
+        <link href="/css/library.css" rel="stylesheet" media="screen">
+        <link href="/css/i18n.css" rel="stylesheet" media="screen">
+        <script src="/jquery/js/jquery-1.9.1.js"></script>
+        <script src="/scripts/vue.js"></script>
+        <script src="/scripts/app.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="brand"><a href="/">Node-RED</a></div>
+            <ul class="navigation">
+                <li class="current"><a href="https://nodered.org">home</a></li>
+            </ul>
+            <a href="#" class="menu"><i class="fa fa-reorder fa-2x"></i></a>
+        </div>
+    </div>
+
+    <div class="grid i18n-viewer">
+        <div class="col-1-1">
+
+            <div id="catalog-list">
+              <select v-model="selected" @change="selectCatalog()">
+                   <option disabled value="">Please select one</option>
+                <option v-for="catalog in catalogs">
+                  {{ catalog }}
+              </option>
+              </select>
+            </div>
+
+
+            <div id="catalogTable">
+                <catalog-table
+                    :data="gridData"
+                    :columns="gridColumns"
+                    :filter-key="searchQuery">
+                </catalog-table>
+        </div>
+    </div>
+</div>
+<div class="links">
+    <div class="grid">
+        <div class="col-1-3">
+            <p><a href="http://nodered.org">Node-RED</a> is a visual wiring tool for the Internet of Things.</p>
+            <p>A project of the <a href="https://js.foundation/">JS Foundation</a>.</p>
+        </div>
+        <div class="col-1-6">
+            <ul>
+                <li><a href="https://github.com/node-red">GitHub</a></li>
+                <li><a href="https://www.npmjs.com/package/node-red">npm</a></li>
+                <li><a href="https://nodered.org/docs">Documentation</a></li>
+                <li><a href="https://nodered.org/docs/api">APIs</a></li>
+            </ul>
+        </div>
+        <div class="col-1-6">
+            <ul>
+                <li><a href="https://flows.nodered.org">Flow Library</a></li>
+                <li><a href="https://nodered.org/about">About</a></li>
+                <li><a href="https://nodered.org/about/conduct">Code of Conduct</a></li>
+                <li><a href="https://nodered.org/about/community">Community</a></li>
+            </ul>
+        </div>
+        <div class="col-1-6">
+            <ul>
+                <li><a href="https://nodered.org/blog">Blog</a></li>
+                <li><a href="https://twitter.com/nodered">Twitter</a></li>
+                <li><a href="https://discourse.nodered.org">Forum</a></li>
+                <li><a href="https://nodered.org/slack">Slack</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script type="text/x-template" id="catalog-table-template">
+  <table>
+    <thead>
+      <tr>
+        <th v-for="key in columns"
+          @click="sortBy(key.key)"
+          :class="{ active: sortKey == key.key }">
+          {{ key.label | capitalize }}
+          <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+          </span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="entry in filteredData">
+        <td v-for="key in columns" :class="entry[key.key]?'':'missing'" v-html="$options.filters.highlightMessage($options.filters.escapeHTML(entry[key.key]))"></td>
+      </tr>
+    </tbody>
+  </table>
+</script>
+
+</body>
+</html>
