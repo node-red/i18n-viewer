@@ -28,3 +28,6 @@ cp -R .scratch/node-red/packages/node_modules/@node-red/editor-client/locales ca
 
 mkdir -p catalogs/@node-red/runtime
 cp -R .scratch/node-red/packages/node_modules/@node-red/runtime/locales catalogs/@node-red/editor-client/
+
+mkdir -p catalogs/@node-red/nodes
+cp -R .scratch/node-red/packages/node_modules/@node-red/nodes/locales catalogs/@node-red/nodes/
