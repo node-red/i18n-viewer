@@ -40,7 +40,6 @@ $(function() {
         methods: {
             selectCatalog: function() {
                 var context = this;
-                console.log(context.selected);
                 $.getJSON('/catalog/'+context.selected, function(catalogs) {
 
                     var langs = Object.keys(catalogs);
@@ -97,8 +96,7 @@ $(function() {
         template: '#catalog-table-template',
         props: {
             data: Array,
-            columns: Array,
-            filterKey: String
+            columns: Array
         },
         data: function () {
             var sortOrders = {}
@@ -107,7 +105,8 @@ $(function() {
             })
             return {
                 sortKey: '',
-                sortOrders: sortOrders
+                sortOrders: sortOrders,
+                filterKey: ''
             }
         },
         computed: {
@@ -149,7 +148,6 @@ $(function() {
     var catalogTable = new Vue({
         el: '#catalogTable',
         data: {
-            searchQuery: '',
             gridColumns: [],
             gridData: []
         }

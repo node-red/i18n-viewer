@@ -8,6 +8,8 @@ table {
   border-radius: 3px;
   background-color: #fff;
   font-size: 11px;
+  border: 1px solid #ccc;
+
   border-collapse: collapse;
 }
 
@@ -64,4 +66,43 @@ th.active .arrow {
 
 .message-insert {
     color: #b68181;
+}
+.catalog-table {
+    overflow-x:scroll;
+    min-height: 400px;
+}
+#catalog-list {
+    margin: 20px 0;
+}
+label {
+    display: inline-block;
+    width: 100px
+}
+form {
+    margin-bottom: 20px;
+}
+select {
+    width: 500px;
+    height: 35px;
+    border-radius: 4px;
+    font-size: 14px;
+    padding: 3px;
+    margin: 0;
+    border: 1px solid #999;
+
+}
+input[type=text] {
+    font-size: 14px;
+    width: 500px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #999;
+    margin-left: 4px;
+}
+input {
+    outline: none;
+}
+input:focus {
+    outline: none;
+    border: 1px solid #B68181;
 }
