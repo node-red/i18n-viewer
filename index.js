@@ -70,9 +70,11 @@ function getFiles(dir,trimmedDir) {
                                 locales = Object.keys(subdirResult.dirs||{});
                                 locales.forEach(locale => {
                                     subdirResult.dirs[locale].files.forEach(messageFile => {
-                                        var fullPath = path.join(subdirResult.name,messageFile);
-                                        localeFiles[fullPath] = localeFiles[fullPath] || [];
-                                        localeFiles[fullPath].push(locale);
+                                        if ((messageFile.substr(-5) === ".json") && (subdirResult.name.indexOf("node_modules") === -1)) {
+                                            var fullPath = path.join(subdirResult.name,messageFile);
+                                            localeFiles[fullPath] = localeFiles[fullPath] || [];
+                                            localeFiles[fullPath].push(locale);
+                                        }
                                     })
                                 });
                                 result.catalogs = localeFiles;
