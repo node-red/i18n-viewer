@@ -2,7 +2,7 @@ const express = require('express');
 const serveStatic = require('serve-static');
 const bodyParser = require('body-parser');
 const path = require("path");
-const fs = require("fs");
+const fs = require("fs-extra");
 const app = express();
 
 const CATALOG_DIR = path.join(__dirname,'catalogs');
@@ -11,6 +11,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.use("/",serveStatic(path.join(__dirname,'public')));
+
+app.get("/projects", function(req,res) {
+    fs.readdir(CATALOG_DIR).then(result => {
+        res.json(result);
+    }).catch(err => {
+        res.status(400).json({error:"unexpected_error", message:err.toString()});
+    })
+})
 
 app.get("/catalogs", function(req,res) {
     getFiles(CATALOG_DIR).then(result => {
@@ -36,7 +44,7 @@ function getCatalog(catalog) {
     var dirname = path.dirname(catalog);
     return getFiles(path.join(CATALOG_DIR,dirname), dirname).then(result => {
         var catalog = {};
-        for (locale in result.dirs) {
+        for (var locale in result.dirs) {
             if (result.dirs.hasOwnProperty(locale)) {
                 if (result.dirs[locale].files.indexOf(basename) > -1) {
                     catalog[locale] = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR,dirname,locale,basename)));
@@ -45,7 +53,6 @@ function getCatalog(catalog) {
         }
         return catalog
     })
-
 }
 
 function getFiles(dir,trimmedDir) {

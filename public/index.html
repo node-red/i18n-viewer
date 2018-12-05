@@ -23,7 +23,7 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <div class="brand"><a href="/">Node-RED</a></div>
+            <div class="brand"><a href="/">Node-RED i18n Viewer</a></div>
             <ul class="navigation">
                 <li class="current"><a href="https://nodered.org">home</a></li>
             </ul>
@@ -34,16 +34,23 @@
     <div class="grid i18n-viewer">
         <div class="col-1-1">
 
-            <div id="catalog-list">
-                <label for="catalog-list-select">Catalog:</label>
-                <select id="catalog-list-select" v-model="selected" @change="selectCatalog()">
-                    <option disabled value="">select catalog</option>
-                    <option v-for="catalog in catalogs">
-                        {{ catalog }}
-                    </option>
-                </select>
-            </div>
+            <div id="projects">
+                <div id="project-list">
+                    <label for="project-list-select">Project:</label>
+                    <select id="project-list-select" v-model="selectedp" @change="selectProject()">
+                        <option disabled value="">select project</option>
+                        <option v-for="project in projects" v-text="project"></option>
+                    </select>
+                </div>
 
+                <div id="catalog-list">
+                    <label for="catalog-list-select">Catalog:</label>
+                    <select id="catalog-list-select" v-model="selectedc" @change="selectCatalog()">
+                        <option disabled value="">select catalog</option>
+                        <option v-for="catalog in catalogs" v-text="catalog" v-if="catalog.indexOf(selectedp)>=0"></option>
+                    </select>
+                </div>
+            </div>
 
             <div id="catalogTable">
                 <catalog-table :data="gridData" :columns="gridColumns"></catalog-table>
