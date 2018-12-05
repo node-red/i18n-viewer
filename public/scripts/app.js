@@ -1,16 +1,16 @@
 $(function() {
 
     Vue.filter('escapeHTML', function(value) {
-        if (!value) return ''
+        if (!value) { return ''; }
         value = value.toString()
         return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     })
+
     Vue.filter('highlightMessage', function (value) {
-        if (!value) return ''
+        if (!value) { return ''; }
         value = value.toString()
         return value.replace(/(__.*?__)/g,'<span class="message-insert">$1</span>')
     })
-
 
     function flattenObject(obj) {
         var results = {};
@@ -32,15 +32,21 @@ $(function() {
     }
 
     var catalogList = new Vue({
-        el: '#catalog-list',
+        el: '#projects',
         data: {
+            projects: [],
+            selectedp: '',
             catalogs: [],
-            selected: ''
+            selectedc: ''
         },
         methods: {
-            selectCatalog: function() {
-                var context = this;
-                $.getJSON('/catalog/'+context.selected, function(catalogs) {
+            selectProject() {
+                this.selectedc = '';
+                catalogTable.gridColumns = [];
+                catalogTable.gridData = [];
+            },
+            selectCatalog() {
+                $.getJSON('/catalog/'+this.selectedc, function(catalogs) {
 
                     var langs = Object.keys(catalogs);
                     var catalog = {};
@@ -66,10 +72,10 @@ $(function() {
                         }
                     }
                     var messages = [];
-                    for (var k in catalog) {
-                        if (catalog.hasOwnProperty(k)) {
-                            catalog[k].key = k;
-                            messages.push(catalog[k]);
+                    for (var c in catalog) {
+                        if (catalog.hasOwnProperty(c)) {
+                            catalog[c].key = c;
+                            messages.push(catalog[c]);
                         }
                     }
 
@@ -84,8 +90,12 @@ $(function() {
         }
     })
 
+    $.getJSON('/projects', function(data) {
+        catalogList.projects = data;
+    });
+
     $.getJSON('/catalogs', function(data) {
-        for (catalog in data) {
+        for (var catalog in data) {
             if (data.hasOwnProperty(catalog)) {
                 catalogList.catalogs.push(catalog);
             }

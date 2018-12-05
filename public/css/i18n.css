@@ -3,23 +3,19 @@
     min-height: 600px;
 }
 
-
 table {
   border-radius: 3px;
   background-color: #fff;
   font-size: 11px;
   border: 1px solid #ccc;
-
   border-collapse: collapse;
 }
-
 th {
   background: #B68181;
   color: rgba(255,255,255,0.66);
   cursor: pointer;
   user-select: none;
 }
-
 td {
   border: 1px solid #ccc;
   background-color: #f9f9f9;
@@ -27,7 +23,6 @@ td {
 td.missing {
     background: #B68181;
 }
-
 th, td {
   min-width: 120px;
   padding: 2px 5px;
@@ -38,7 +33,6 @@ td:first-child {
 th.active {
   color: #fff;
 }
-
 th.active .arrow {
   opacity: 1;
 }
@@ -70,6 +64,9 @@ th.active .arrow {
 .catalog-table {
     overflow-x:scroll;
     min-height: 400px;
+}
+#project-list {
+    margin: 20px 0;
 }
 #catalog-list {
     margin: 20px 0;
