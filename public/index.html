@@ -101,6 +101,7 @@
           <input type="checkbox" :id="'lang_'+lang" :value="lang" v-model="filterLanguages" @change="updateLanguages()">
             <label :for="'lang_'+lang">{{lang}}</label>
       </span>
+      <div><input type="checkbox" id="filter-missing" v-model="filterMissing"><label for="filter-missing"> Show missing</label></div>
   </form>
   <table :class="plaintext?'plaintext':''">
     <thead>

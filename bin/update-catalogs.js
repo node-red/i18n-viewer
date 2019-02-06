@@ -88,7 +88,7 @@ async function copyProjectPaths(projectDir, projectFile, items, destDir) {
         let source = path.join(projectDir,projectFile,items[i]);
         let dest = path.join(destDir,items[i]);
         console.log(source,"->",dest)
-        await fs.copy(source,dest,{overwrite:false})
+        await fs.copy(source,dest);
     }
 }
 function run(cmd,cwd) {

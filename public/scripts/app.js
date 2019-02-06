@@ -91,7 +91,8 @@ $(function() {
                 sortKey: '',
                 sortOrders: sortOrders,
                 filterKey: '',
-                filterLanguages: JSON.parse(localStorage.filteredLanguages||"[]")
+                filterLanguages: JSON.parse(localStorage.filteredLanguages||"[]"),
+                filterMissing: false
             }
         },
         // watch: {
@@ -102,13 +103,29 @@ $(function() {
         computed: {
             filteredData: function () {
                 var sortKey = this.sortKey
+                var filterMissing = this.filterMissing;
                 var filterKey = this.filterKey && this.filterKey.toLowerCase()
                 var order = this.sortOrders[sortKey] || 1
                 var data = this.data
-                if (filterKey) {
+                var requiredKeys = {key:true};
+                var requiredKeyCount = this.filterLanguages.length+1;
+                if (filterMissing) {
+                    this.filterLanguages.forEach(function(k) { requiredKeys[k] = true; })
+                }
+                if (filterKey || filterMissing) {
                     data = data.filter(function (row) {
-                        return Object.keys(row).some(function (key) {
-                            return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                        var keys = Object.keys(row);
+                        if (filterMissing) {
+                            var matchKeyCount = 0;
+                            keys.forEach(function(key) {
+                                if (requiredKeys[key]) {
+                                    matchKeyCount++;
+                                }
+                            })
+                            return matchKeyCount !== requiredKeyCount;
+                        }
+                        return keys.some(function (key) {
+                            return row[key].toLowerCase().indexOf(filterKey) > -1
                         })
                     })
                 }
