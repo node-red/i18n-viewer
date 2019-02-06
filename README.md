@@ -1,24 +1,63 @@
 i18n-viewer for Node-RED project locale files
 =============================================
 
+A quick hack to help us see the various translations next to each other. The
+hosted version still relies on running a script on the server to pull in any
+updates to keep it in sync with git. There is a lot more it could do if anyone
+wanted to contribute.
 
-A quick hack to help us see the various translations next to each other. The hosted version still relies on running a script on the server to pull in any updates to keep it in sync with git. There is a lot more it could do if anyone wanted to contribute.
-
-It was never envisaged for people to run locally, so well done to @joerg_w for getting it going.
 
 ### Running locally
 
      git clone https://github.com/node-red/i18n-viewer`
      cd i18n-viewer
      npm install
-     mkdir catalogs
+     node index.js
 
-copy or link your local project locales directory (directories) to catalogs, for example
+Then open http://localhost:2880
 
-    ln -s ~/projects/myNRnodeDirectory catalogs/myNRnodeDirectory
+### Configuring
 
- then run
+The application uses the file `settings.ini` to identify what git repos it should
+display the translations from. It is preconfigured for the main `node-red` and
+`node-red-dashboard` repos. It's structure allows the tool to track multiple branches
+of the same repo.
 
-    node index.js
+```yaml
+---
+node-red:
+  url: https://github.com/node-red/node-red.git
+  branches:
+    dev:
+      paths:
+      - packages/node_modules/@node-red/editor-client/locales
+      - packages/node_modules/@node-red/runtime/locales
+      - packages/node_modules/@node-red/nodes/locales
+node-red-dashboard:
+  url: https://github.com/node-red/node-red-dashboard.git
+  branches:
+    master:
+      paths:
+      - nodes/locales
+```
 
-open your browser and connect to `http://localhost:2880`
+To pull down these repos and copy over their locale files, run the tool
+
+     node bin/update-catalogs.js
+
+The catalog files will be copied into the `catalogs` directory in the root of
+the application. It assumes everything under the paths provided should be copied
+and that'll only be the json message catalogs and html help pages.
+
+### Adding local project files
+
+To add in local project files that are not currently in a git repository, do the following:
+
+1. create two levels of subdirectory under `catalogs`. These would correspond to the repo
+   name and branch name from the `settings.ini` file.
+
+        catalogs/<project-name>/<branch>/
+
+2. copy, or sym-link your project's locales directory in to there:
+
+        ln -s ~/my-project/something/locales catalogs/<project-name>/<branch>/
