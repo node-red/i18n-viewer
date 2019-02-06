@@ -1,13 +1,13 @@
 .i18n-viewer {
     background: white;
-    min-height: 600px;
+    padding: 30px;
 }
 
 
 table {
   border-radius: 3px;
   background-color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   border: 1px solid #ccc;
 
   border-collapse: collapse;
@@ -15,7 +15,8 @@ table {
 
 th {
   background: #B68181;
-  color: rgba(255,255,255,0.66);
+  font-weight: normal;
+  color: rgba(255,255,255,0.8);
   cursor: pointer;
   user-select: none;
 }
@@ -31,9 +32,10 @@ td.missing {
 th, td {
   min-width: 120px;
   padding: 2px 5px;
+  vertical-align: top;
+  font-family: monospace;
 }
 td:first-child {
-    font-family: monospace;
 }
 th.active {
   color: #fff;
@@ -42,7 +44,11 @@ th.active {
 th.active .arrow {
   opacity: 1;
 }
-
+table.plaintext * td {
+    white-space:pre;
+    padding: 10px;
+    font-size: 14px;
+}
 .arrow {
   display: inline-block;
   vertical-align: middle;
@@ -72,17 +78,16 @@ th.active .arrow {
     min-height: 400px;
 }
 #catalog-list {
-    margin: 20px 0;
+    margin: 0px 0 10px;
 }
 label {
     display: inline-block;
-    width: 100px
+    width: auto;
 }
 form {
     margin-bottom: 20px;
 }
 select {
-    width: 500px;
     height: 35px;
     border-radius: 4px;
     font-size: 14px;
@@ -93,11 +98,10 @@ select {
 }
 input[type=text] {
     font-size: 14px;
-    width: 500px;
+    width: 300px;
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #999;
-    margin-left: 4px;
 }
 input {
     outline: none;
@@ -105,4 +109,11 @@ input {
 input:focus {
     outline: none;
     border: 1px solid #B68181;
+}
+
+.i18n-lang {
+    border: 1px solid #999;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 2px 4px;
 }

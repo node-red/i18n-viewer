@@ -31,23 +31,31 @@
         </div>
     </div>
 
-    <div class="grid i18n-viewer">
-        <div class="col-1-1">
-
-            <div id="catalog-list">
-                <label for="catalog-list-select">Catalog:</label>
-                <select id="catalog-list-select" v-model="selected" @change="selectCatalog()">
+    <div class="i18n-viewer">
+        <div id="catalog-list">
+            <div>
+                <select id="repo-list-select" v-model="selectedRepo" @change="selectRepo()">
+                    <option disabled value="">select repository</option>
+                    <option v-for="repo in repos">
+                        {{ repo }}
+                    </option>
+                </select>
+                <select id="branch-list-select" v-model="selectedBranch" @change="selectBranch()">
+                    <option disabled value="">select branch</option>
+                    <option v-for="branch in branches">
+                        {{ branch }}
+                    </option>
+                </select>
+                <select id="catalog-list-select" v-model="selectedCatalog" @change="selectCatalog()">
                     <option disabled value="">select catalog</option>
                     <option v-for="catalog in catalogs">
                         {{ catalog }}
                     </option>
                 </select>
             </div>
-
-
-            <div id="catalogTable">
-                <catalog-table :data="gridData" :columns="gridColumns"></catalog-table>
-            </div>
+        </div>
+        <div id="catalogTable">
+            <catalog-table :data="gridData" :columns="gridColumns" :plaintext="plainText" :languages="languages" :filterLanguages="filteredLanguages"></catalog-table>
         </div>
     </div>
 
@@ -87,14 +95,20 @@
 
 <script type="text/x-template" id="catalog-table-template">
 <div class="catalog-table">
-  <form><label>Filter:</label><input type="text" name="query" v-model="filterKey"></form>
-  <table>
+  <form v-if="columns.length>0">
+      <input type="text" name="query" placeholder="filter" v-model="filterKey">
+      <span class="i18n-lang" v-for="lang in languages">
+          <input type="checkbox" :id="'lang_'+lang" :value="lang" v-model="filterLanguages" @change="updateLanguages()">
+            <label :for="'lang_'+lang">{{lang}}</label>
+      </span>
+  </form>
+  <table :class="plaintext?'plaintext':''">
     <thead>
       <tr>
-        <th v-for="key in columns"
+        <th v-for="key in columns" v-if="showLanguage(key.key)"
           @click="sortBy(key.key)"
           :class="{ active: sortKey == key.key }">
-          {{ key.label | capitalize }}
+          {{ key.label }}
           <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
           </span>
         </th>
@@ -102,7 +116,7 @@
     </thead>
     <tbody>
       <tr v-for="entry in filteredData">
-        <td v-for="key in columns" :class="entry[key.key]?'':'missing'" v-html="$options.filters.highlightMessage($options.filters.escapeHTML(entry[key.key]))"></td>
+        <td v-for="key in columns" v-if="showLanguage(key.key)" :class="entry[key.key]?'':'missing'" v-html="$options.filters.highlightMessage($options.filters.escapeHTML(entry[key.key]))"></td>
       </tr>
     </tbody>
   </table>

@@ -30,64 +30,46 @@ $(function() {
         }
         return results;
     }
-
     var catalogList = new Vue({
         el: '#catalog-list',
         data: {
+            repos: [],
+            branches: [],
             catalogs: [],
-            selected: ''
+            selectedRepo: '',
+            selectedBranch: '',
+            selectedCatalog: ''
         },
         methods: {
+            selectRepo: function() {
+                this.branches = Object.keys(allCatalogs[this.selectedRepo].branches);
+            },
+            selectBranch: function() {
+                this.catalogs = Object.keys(allCatalogs[this.selectedRepo].branches[this.selectedBranch].catalogs);
+            },
             selectCatalog: function() {
                 var context = this;
-                $.getJSON('/catalog/'+context.selected, function(catalogs) {
-
-                    var langs = Object.keys(catalogs);
-                    var catalog = {};
-                    var reverseLookup = {};
-                    var dupes = {};
-
-                    var langCounts = {}
-
-                    for (var i=0;i<langs.length;i++) {
-                        langCounts[langs[i]] = 0;
-                        var flatCat = flattenObject(catalogs[langs[i]]);
-                        for (var k in flatCat) {
-                            if (flatCat.hasOwnProperty(k)) {
-                                langCounts[langs[i]]++;
-                                catalog[k] = catalog[k] || {};
-                                catalog[k][langs[i]] = flatCat[k];
-                                reverseLookup[flatCat[k]] = reverseLookup[flatCat[k]] || [];
-                                reverseLookup[flatCat[k]].push(k+":"+langs[i]);
-                                if (reverseLookup[flatCat[k]].length > 1) {
-                                    dupes[flatCat[k]] = true
-                                }
+                $.getJSON('/catalog/'+this.selectedRepo+'/'+this.selectedBranch+'/'+this.selectedCatalog, function(catalogs) {
+                    if (/.json$/.test(context.selectedCatalog)) {
+                        catalogTable.messages(catalogs);
+                    } else {
+                        for (var l in catalogs) {
+                            if (catalogs.hasOwnProperty(l)) {
+                                catalogs[l] = {"text":catalogs[l]}
                             }
                         }
+                        catalogTable.messages(catalogs,true);
                     }
-                    var messages = [];
-                    for (var k in catalog) {
-                        if (catalog.hasOwnProperty(k)) {
-                            catalog[k].key = k;
-                            messages.push(catalog[k]);
-                        }
-                    }
-
-                    catalogTable.gridColumns = [{key:'key',label:'key'}].concat(langs.map(function(k) { return {label:k+" ("+langCounts[k]+")",key:k} } ));
-                    catalogTable.gridData = messages;
-
-                    var dupeKeys = Object.keys(dupes);
-                    dupeKeys = dupeKeys.map(function(k) { return reverseLookup[k]})
-
                 });
             }
         }
     })
-
+    var allCatalogs;
     $.getJSON('/catalogs', function(data) {
-        for (catalog in data) {
-            if (data.hasOwnProperty(catalog)) {
-                catalogList.catalogs.push(catalog);
+        allCatalogs = data;
+        for (var repo in data) {
+            if (data.hasOwnProperty(repo)) {
+                catalogList.repos.push(repo);
             }
         }
     });
@@ -96,7 +78,9 @@ $(function() {
         template: '#catalog-table-template',
         props: {
             data: Array,
-            columns: Array
+            columns: Array,
+            plaintext: Boolean,
+            languages: Array
         },
         data: function () {
             var sortOrders = {}
@@ -106,9 +90,15 @@ $(function() {
             return {
                 sortKey: '',
                 sortOrders: sortOrders,
-                filterKey: ''
+                filterKey: '',
+                filterLanguages: JSON.parse(localStorage.filteredLanguages||"[]")
             }
         },
+        // watch: {
+        //     filterLanguages: function(A,B) {
+        //         this.$forceUpdate();
+        //     }
+        // },
         computed: {
             filteredData: function () {
                 var sortKey = this.sortKey
@@ -138,9 +128,15 @@ $(function() {
             }
         },
         methods: {
+            showLanguage: function(lang) {
+                return lang==='key'|| this.filterLanguages.indexOf(lang) !== -1;
+            },
             sortBy: function (key) {
                 this.sortKey = key
                 this.sortOrders[key] = this.sortOrders[key] * -1
+            },
+            updateLanguages: function() {
+                localStorage.filteredLanguages = JSON.stringify(this.filterLanguages)
             }
         }
     })
@@ -149,7 +145,62 @@ $(function() {
         el: '#catalogTable',
         data: {
             gridColumns: [],
-            gridData: []
+            gridData: [],
+            plainText: false,
+            languages: [],
+            filteredLanguages: []
+        },
+        methods: {
+            messages: function(catalogs, plainText) {
+                var langs = Object.keys(catalogs);
+                langs.sort(function(A,B) {
+                    if (A === 'en-US') {
+                        return -1;
+                    } else if (B === 'en-US') {
+                        return 1;
+                    }
+                    return A.localeCompare(B);
+                })
+                var catalog = {};
+                var reverseLookup = {};
+                var dupes = {};
+
+                var langCounts = {}
+                this.languages = langs.slice();
+                this.filteredLanguages = langs.slice();
+                for (var i=0;i<langs.length;i++) {
+                    langCounts[langs[i]] = 0;
+                    var flatCat = flattenObject(catalogs[langs[i]]);
+                    for (var k in flatCat) {
+                        if (flatCat.hasOwnProperty(k)) {
+                            langCounts[langs[i]]++;
+                            catalog[k] = catalog[k] || {};
+                            catalog[k][langs[i]] = flatCat[k];
+                            reverseLookup[flatCat[k]] = reverseLookup[flatCat[k]] || [];
+                            reverseLookup[flatCat[k]].push(k+":"+langs[i]);
+                            if (reverseLookup[flatCat[k]].length > 1) {
+                                dupes[flatCat[k]] = true
+                            }
+                        }
+                    }
+                }
+                var messages = [];
+                for (var k in catalog) {
+                    if (catalog.hasOwnProperty(k)) {
+                        catalog[k].key = k;
+                        messages.push(catalog[k]);
+                    }
+                }
+                this.gridColumns = [{key:'key',label:'key'}].concat(langs.map(function(k) { return {label:k+" ("+langCounts[k]+")",key:k} } ));
+                if (plainText) {
+                    this.gridColumns.shift();
+                }
+                this.plainText = !!plainText;
+                this.gridData = messages;
+
+                var dupeKeys = Object.keys(dupes);
+                dupeKeys = dupeKeys.map(function(k) { return reverseLookup[k]})
+            }
         }
     })
 });
