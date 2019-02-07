@@ -83,7 +83,6 @@ $(function() {
                 sortOrders: sortOrders,
                 filterKey: '',
                 filterLanguages: JSON.parse(localStorage.filteredLanguages||"[]"),
-                filterMissing: false,
                 filterOutdated: false
             }
         },
@@ -94,48 +93,45 @@ $(function() {
         // },
         computed: {
             filteredData: function () {
+                var self = this;
                 var sortKey = this.sortKey
-                var filterMissing = this.filterMissing;
                 var filterOutdated = this.filterOutdated;
-
                 var filterKey = this.filterKey && this.filterKey.toLowerCase()
                 var order = this.sortOrders[sortKey] || 1
                 var data = this.data
+                var requiredLangs = this.languages.filter(function(value) { return -1 !== self.filterLanguages.indexOf(value) });
                 var requiredKeys = {key:true};
-                var requiredKeyCount = this.filterLanguages.length+1;
+                var requiredKeyCount = requiredLangs.length+1;
+
                 if (filterOutdated) {
-                    data = data.filter(function(row) {
-                        if (!row['en-US']) {
-                            return true;
-                        } else {
-                            var now = row['en-US'].u;
-                            var keys = Object.keys(row);
-                            return keys.some(function(key) {
-                                return row[key].u < now;
-                            })
-                        }
-                    })
-                } else {
-                    if (filterMissing) {
-                        this.filterLanguages.forEach(function(k) { requiredKeys[k] = true; })
-                    }
-                    if (filterKey || filterMissing) {
-                        data = data.filter(function (row) {
-                            var keys = Object.keys(row);
-                            if (filterMissing) {
-                                var matchKeyCount = 0;
-                                keys.forEach(function(key) {
-                                    if (requiredKeys[key]) {
-                                        matchKeyCount++;
-                                    }
-                                })
-                                return matchKeyCount !== requiredKeyCount;
+                    requiredLangs.forEach(function(k) { requiredKeys[k] = true; })
+                }
+                if (filterKey || filterOutdated) {
+                    data = data.filter(function (row) {
+                        var keys = Object.keys(row);
+                        var now = row['en-US']?row['en-US'].u : 0;
+                        var match = false;
+                        var matchKeyCount = 0;
+                        var matchFilterKey = false;
+                        keys.forEach(function(key) {
+                            if (filterOutdated) {
+                                if (requiredKeys[key]) {
+                                    matchKeyCount++;
+                                    match = match || (row[key].u < now)
+                                }
                             }
-                            return keys.some(function (key) {
-                                return row[key].toLowerCase().indexOf(filterKey) > -1
-                            })
+                            if (filterKey) {
+                                matchFilterKey = matchFilterKey || row[key].v.toLowerCase().indexOf(filterKey) > -1
+                            }
                         })
-                    }
+
+                        match = !filterOutdated || (match || matchKeyCount !== requiredKeyCount);
+
+                        if (filterKey) {
+                            match = matchFilterKey && match;
+                        }
+                        return match;
+                    })
                 }
                 if (sortKey) {
                     data = data.slice().sort(function (a, b) {
