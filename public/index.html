@@ -101,7 +101,10 @@
           <input type="checkbox" :id="'lang_'+lang" :value="lang" v-model="filterLanguages" @change="updateLanguages()">
             <label :for="'lang_'+lang">{{lang}}</label>
       </span>
-      <div><input type="checkbox" id="filter-missing" v-model="filterMissing"><label for="filter-missing"> Show missing</label></div>
+      <div>
+          <input type="checkbox" id="filter-missing" v-model="filterMissing"><label for="filter-missing"> Show missing</label>
+          <input type="checkbox" id="filter-outdated" v-model="filterOutdated"><label for="filter-outdated"> Show outdated</label>
+      </div>
   </form>
   <table :class="plaintext?'plaintext':''">
     <thead>
@@ -117,7 +120,7 @@
     </thead>
     <tbody>
       <tr v-for="entry in filteredData">
-        <td v-for="key in columns" v-if="showLanguage(key.key)" :class="entry[key.key]?'':'missing'" v-html="$options.filters.highlightMessage($options.filters.escapeHTML(entry[key.key]))"></td>
+        <td v-for="key in columns" v-if="showLanguage(key.key)" :class="(entry[key.key]?(( key.key !== 'key' && (!entry['en-US']||entry['en-US'].u>entry[key.key].u))?'outdated':''):'missing')" v-html="entry[key.key]?$options.filters.highlightMessage($options.filters.escapeHTML(entry[key.key].v)):''"></td>
       </tr>
     </tbody>
   </table>

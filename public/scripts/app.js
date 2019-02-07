@@ -45,21 +45,12 @@ $(function() {
                 this.branches = Object.keys(allCatalogs[this.selectedRepo].branches);
             },
             selectBranch: function() {
-                this.catalogs = Object.keys(allCatalogs[this.selectedRepo].branches[this.selectedBranch].catalogs);
+                this.catalogs = allCatalogs[this.selectedRepo].branches[this.selectedBranch].catalogs;
             },
             selectCatalog: function() {
                 var context = this;
                 $.getJSON('/catalog/'+this.selectedRepo+'/'+this.selectedBranch+'/'+this.selectedCatalog, function(catalogs) {
-                    if (/.json$/.test(context.selectedCatalog)) {
-                        catalogTable.messages(catalogs);
-                    } else {
-                        for (var l in catalogs) {
-                            if (catalogs.hasOwnProperty(l)) {
-                                catalogs[l] = {"text":catalogs[l]}
-                            }
-                        }
-                        catalogTable.messages(catalogs,true);
-                    }
+                    catalogTable.messages(catalogs,!/.json$/.test(context.selectedCatalog));
                 });
             }
         }
@@ -92,7 +83,8 @@ $(function() {
                 sortOrders: sortOrders,
                 filterKey: '',
                 filterLanguages: JSON.parse(localStorage.filteredLanguages||"[]"),
-                filterMissing: false
+                filterMissing: false,
+                filterOutdated: false
             }
         },
         // watch: {
@@ -104,30 +96,46 @@ $(function() {
             filteredData: function () {
                 var sortKey = this.sortKey
                 var filterMissing = this.filterMissing;
+                var filterOutdated = this.filterOutdated;
+
                 var filterKey = this.filterKey && this.filterKey.toLowerCase()
                 var order = this.sortOrders[sortKey] || 1
                 var data = this.data
                 var requiredKeys = {key:true};
                 var requiredKeyCount = this.filterLanguages.length+1;
-                if (filterMissing) {
-                    this.filterLanguages.forEach(function(k) { requiredKeys[k] = true; })
-                }
-                if (filterKey || filterMissing) {
-                    data = data.filter(function (row) {
-                        var keys = Object.keys(row);
-                        if (filterMissing) {
-                            var matchKeyCount = 0;
-                            keys.forEach(function(key) {
-                                if (requiredKeys[key]) {
-                                    matchKeyCount++;
-                                }
+                if (filterOutdated) {
+                    data = data.filter(function(row) {
+                        if (!row['en-US']) {
+                            return true;
+                        } else {
+                            var now = row['en-US'].u;
+                            var keys = Object.keys(row);
+                            return keys.some(function(key) {
+                                return row[key].u < now;
                             })
-                            return matchKeyCount !== requiredKeyCount;
                         }
-                        return keys.some(function (key) {
-                            return row[key].toLowerCase().indexOf(filterKey) > -1
-                        })
                     })
+                } else {
+                    if (filterMissing) {
+                        this.filterLanguages.forEach(function(k) { requiredKeys[k] = true; })
+                    }
+                    if (filterKey || filterMissing) {
+                        data = data.filter(function (row) {
+                            var keys = Object.keys(row);
+                            if (filterMissing) {
+                                var matchKeyCount = 0;
+                                keys.forEach(function(key) {
+                                    if (requiredKeys[key]) {
+                                        matchKeyCount++;
+                                    }
+                                })
+                                return matchKeyCount !== requiredKeyCount;
+                            }
+                            return keys.some(function (key) {
+                                return row[key].toLowerCase().indexOf(filterKey) > -1
+                            })
+                        })
+                    }
                 }
                 if (sortKey) {
                     data = data.slice().sort(function (a, b) {
@@ -168,8 +176,16 @@ $(function() {
             filteredLanguages: []
         },
         methods: {
-            messages: function(catalogs, plainText) {
-                var langs = Object.keys(catalogs);
+            messages: function(catalog, plainText) {
+                var messages = [];
+                var langCounts = {};
+                for (var key in catalog) {
+                    var entry = catalog[key];
+                    Object.keys(entry).forEach(function(k) { langCounts[k] = langCounts[k] || 0; langCounts[k]++ });
+                    entry.key = {v:key};
+                    messages.push(entry);
+                }
+                var langs = Object.keys(langCounts);
                 langs.sort(function(A,B) {
                     if (A === 'en-US') {
                         return -1;
@@ -178,45 +194,15 @@ $(function() {
                     }
                     return A.localeCompare(B);
                 })
-                var catalog = {};
-                var reverseLookup = {};
-                var dupes = {};
 
-                var langCounts = {}
                 this.languages = langs.slice();
                 this.filteredLanguages = langs.slice();
-                for (var i=0;i<langs.length;i++) {
-                    langCounts[langs[i]] = 0;
-                    var flatCat = flattenObject(catalogs[langs[i]]);
-                    for (var k in flatCat) {
-                        if (flatCat.hasOwnProperty(k)) {
-                            langCounts[langs[i]]++;
-                            catalog[k] = catalog[k] || {};
-                            catalog[k][langs[i]] = flatCat[k];
-                            reverseLookup[flatCat[k]] = reverseLookup[flatCat[k]] || [];
-                            reverseLookup[flatCat[k]].push(k+":"+langs[i]);
-                            if (reverseLookup[flatCat[k]].length > 1) {
-                                dupes[flatCat[k]] = true
-                            }
-                        }
-                    }
-                }
-                var messages = [];
-                for (var k in catalog) {
-                    if (catalog.hasOwnProperty(k)) {
-                        catalog[k].key = k;
-                        messages.push(catalog[k]);
-                    }
-                }
-                this.gridColumns = [{key:'key',label:'key'}].concat(langs.map(function(k) { return {label:k+" ("+langCounts[k]+")",key:k} } ));
+                this.gridColumns = [{key:'key',label:'key'}].concat(langs.map(function(k) { return {label:k+" ("+langCounts[k]+")"+(!!plainText?(' '+new Date(messages[0][k].u).toISOString()):''),key:k} } ));
                 if (plainText) {
                     this.gridColumns.shift();
                 }
                 this.plainText = !!plainText;
                 this.gridData = messages;
-
-                var dupeKeys = Object.keys(dupes);
-                dupeKeys = dupeKeys.map(function(k) { return reverseLookup[k]})
             }
         }
     })

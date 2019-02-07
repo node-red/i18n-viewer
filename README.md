@@ -51,13 +51,13 @@ and that'll only be the json message catalogs and html help pages.
 
 ### Adding local project files
 
-To add in local project files that are not currently in a git repository, do the following:
+**Currently, this project does not support local project files**
 
-1. create two levels of subdirectory under `catalogs`. These would correspond to the repo
-   name and branch name from the `settings.ini` file.
 
-        catalogs/<project-name>/<branch>/
 
-2. copy, or sym-link your project's locales directory in to there:
+**Ignore the rest of this readme for now!**
 
-        ln -s ~/my-project/something/locales catalogs/<project-name>/<branch>/
+Adding in local project files that are not currently on a remote git repo is a bit
+of a hack at the moment.
+
+**Todo:** Update `bin/update-catalogs.js` to support local project files.

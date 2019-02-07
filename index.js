@@ -20,7 +20,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use("/",serveStatic(path.join(__dirname,'public')));
 
 app.get("/catalogs", function(req,res) {
-    // getFiles(CATALOG_DIR).then(result => {
     getCatalogs().then(result => {
         res.json(result);
     }).catch(err => {
@@ -35,13 +34,13 @@ app.get("/catalog/:repo/:branch/*",(req,res) => {
         res.status(400).json({error:"unexpected_error", message:err.toString()});
     })
 })
-app.get("/catalog/*", function(req,res) {
-    getCatalog(req.params[0]).then(result => {
-        res.json(result);
-    }).catch(err => {
-        res.status(400).json({error:"unexpected_error", message:err.toString()});
-    })
-})
+// app.get("/catalog/*", function(req,res) {
+//     getCatalog(req.params[0]).then(result => {
+//         res.json(result);
+//     }).catch(err => {
+//         res.status(400).json({error:"unexpected_error", message:err.toString()});
+//     })
+// })
 
 app.listen(process.env.PORT||2880);
 console.log("Listening on http://localhost:"+(process.env.PORT||2880));
@@ -51,23 +50,9 @@ async function getCatalog2(repo,branch,file) {
     if (!parts) {
         throw new Error("Not a valid catalog path");
     }
-
-    const catalogBasePath = path.join(CATALOG_DIR,repo,branch,parts[1]);
-    const languages = await getLanguages(catalogBasePath,parts[2]);
-    // const content = await fs.readFile(catalogPath,'utf8')
-    const result = {};
-    for (let i=0;i<languages.length;i++) {
-        let filePath = path.join(catalogBasePath,languages[i],parts[3]);
-        try {
-            result[languages[i]] = await fs.readFile(filePath,'utf8');
-            if (/.json$/.test(filePath)) {
-                result[languages[i]] = JSON.parse(result[languages[i]] );
-            }
-        } catch(err) {
-
-        }
-    }
-    return result;
+    const filePath = path.join(CATALOG_DIR,repo,branch,file);
+    const content = await fs.readFile(filePath,'utf8');
+    return JSON.parse(content);
 }
 
 async function getLanguages(catalogPath,filter) {
@@ -85,26 +70,27 @@ async function getLanguages(catalogPath,filter) {
     }
     return langs;
 }
-function getCatalog(catalog) {
-    var basename = path.basename(catalog);
-    var dirname = path.dirname(catalog);
-    return getFiles(path.join(CATALOG_DIR,dirname), dirname).then(result => {
-        var catalog = {};
-        for (locale in result.dirs) {
-            if (result.dirs.hasOwnProperty(locale)) {
-                if (result.dirs[locale].files.indexOf(basename) > -1) {
-                    try {
-                        catalog[locale] = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR,dirname,locale,basename)));
-                    } catch(err) {
-
-                    }
-                }
-            }
-        }
-        return catalog
-    })
-
-}
+// function getCatalog(catalog) {
+//     console.log(catalog);
+//     var basename = path.basename(catalog);
+//     var dirname = path.dirname(catalog);
+//     return getFiles(path.join(CATALOG_DIR,dirname), dirname).then(result => {
+//         var catalog = {};
+//         for (locale in result.dirs) {
+//             if (result.dirs.hasOwnProperty(locale)) {
+//                 if (result.dirs[locale].files.indexOf(basename) > -1) {
+//                     try {
+//                         catalog[locale] = JSON.parse(fs.readFileSync(path.join(CATALOG_DIR,dirname,locale,basename)));
+//                     } catch(err) {
+//
+//                     }
+//                 }
+//             }
+//         }
+//         return catalog
+//     })
+//
+// }
 
 async function getCatalogs() {
     const result = clone(defaultConfig);
@@ -114,17 +100,17 @@ async function getCatalogs() {
                 if (defaultConfig[repo].branches.hasOwnProperty(branch)) {
                     var paths = defaultConfig[repo].branches[branch].paths;
                     delete result[repo].branches[branch].paths;
-                    result[repo].branches[branch].catalogs = {};
+                    result[repo].branches[branch].catalogs = [];
                     for (let i=0;i<paths.length;i++) {
                         let catalogBasePath = path.join(CATALOG_DIR,repo,branch,paths[i]);
-                        var languages = await getLanguages(catalogBasePath);
-                        for (let j=0;j<languages.length;j++) {
-                            var files = await walkFiles(path.join(catalogBasePath,languages[j]));
+                        try {
+                            var files = await walkFiles(path.join(catalogBasePath,'*'));
                             files.forEach(f=> {
                                 f = path.join(paths[i],'*',f);
-                                result[repo].branches[branch].catalogs[f] = result[repo].branches[branch].catalogs[f] || [];
-                                result[repo].branches[branch].catalogs[f].push(languages[j])
+                                result[repo].branches[branch].catalogs.push(f)
                             })
+                        } catch(err) {
+                            console.log(err);
                         }
                     }
                 }
@@ -146,57 +132,57 @@ async function walkFiles(dir) {
 }
 
 
-function getFiles(dir,trimmedDir) {
-    trimmedDir = trimmedDir || "";
-    var result = {name:trimmedDir,catalogs:{}};
-    return new Promise((resolve,reject) => {
-        var promises = [];
-        fs.readdir(dir, (err, files) => {
-            if (err) {
-                return reject(err);
-            }
-            files.forEach(file => {
-                if (file.charAt(0) !== '.') {
-                    var stat = fs.statSync(path.join(dir, file));
-                    if (stat.isFile()) {
-                        result.files = result.files||[];
-                        result.files.push(file);
-                    } else if (stat.isDirectory()) {
-                        promises.push(getFiles(path.join(dir,file),path.join(trimmedDir,file)).then(subdirResult => {
-                            if (file === 'locales') {
-                                let localeFiles = {};
-                                locales = Object.keys(subdirResult.dirs||{});
-                                locales.forEach(locale => {
-                                    subdirResult.dirs[locale].files.forEach(messageFile => {
-                                        if ((messageFile.substr(-5) === ".json") && (subdirResult.name.indexOf("node_modules") === -1)) {
-                                            var fullPath = path.join(subdirResult.name,messageFile);
-                                            localeFiles[fullPath] = localeFiles[fullPath] || [];
-                                            localeFiles[fullPath].push(locale);
-                                        }
-                                    })
-                                });
-                                result.catalogs = localeFiles;
-                            // } else if (subdirResult.hasOwnProperty('catalogs')) {
-                            //     result = {
-                            //         catalogs: subdirResult.catalogs,
-                            //         name: subdirResult.trimmedDir
-                            //     }
-                            } else {
-                                result.catalogs = Object.assign({},result.catalogs,subdirResult.catalogs);
-                                result.dirs = result.dirs ||{};
-                                result.dirs[file] = subdirResult;
-                            }
-                        }));
-                    }
-                }
-            });
-            resolve(Promise.all(promises).then(() => {
-                if (trimmedDir !== "") {
-                    return result
-                } else {
-                    return result.catalogs
-                }
-            }))
-        })
-    });
-}
+// function getFiles(dir,trimmedDir) {
+//     trimmedDir = trimmedDir || "";
+//     var result = {name:trimmedDir,catalogs:{}};
+//     return new Promise((resolve,reject) => {
+//         var promises = [];
+//         fs.readdir(dir, (err, files) => {
+//             if (err) {
+//                 return reject(err);
+//             }
+//             files.forEach(file => {
+//                 if (file.charAt(0) !== '.') {
+//                     var stat = fs.statSync(path.join(dir, file));
+//                     if (stat.isFile()) {
+//                         result.files = result.files||[];
+//                         result.files.push(file);
+//                     } else if (stat.isDirectory()) {
+//                         promises.push(getFiles(path.join(dir,file),path.join(trimmedDir,file)).then(subdirResult => {
+//                             if (file === 'locales') {
+//                                 let localeFiles = {};
+//                                 locales = Object.keys(subdirResult.dirs||{});
+//                                 locales.forEach(locale => {
+//                                     subdirResult.dirs[locale].files.forEach(messageFile => {
+//                                         if ((messageFile.substr(-5) === ".json") && (subdirResult.name.indexOf("node_modules") === -1)) {
+//                                             var fullPath = path.join(subdirResult.name,messageFile);
+//                                             localeFiles[fullPath] = localeFiles[fullPath] || [];
+//                                             localeFiles[fullPath].push(locale);
+//                                         }
+//                                     })
+//                                 });
+//                                 result.catalogs = localeFiles;
+//                             // } else if (subdirResult.hasOwnProperty('catalogs')) {
+//                             //     result = {
+//                             //         catalogs: subdirResult.catalogs,
+//                             //         name: subdirResult.trimmedDir
+//                             //     }
+//                             } else {
+//                                 result.catalogs = Object.assign({},result.catalogs,subdirResult.catalogs);
+//                                 result.dirs = result.dirs ||{};
+//                                 result.dirs[file] = subdirResult;
+//                             }
+//                         }));
+//                     }
+//                 }
+//             });
+//             resolve(Promise.all(promises).then(() => {
+//                 if (trimmedDir !== "") {
+//                     return result
+//                 } else {
+//                     return result.catalogs
+//                 }
+//             }))
+//         })
+//     });
+// }
