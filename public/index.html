@@ -46,6 +46,12 @@
                         {{ branch }}
                     </option>
                 </select>
+                <select id="base-list-select" v-model="selectedBase" @change="selectBase()">
+                    <option disabled value="">base branch</option>
+                    <option v-for="base in branchesWithNone" v-if="base !== selectedBranch">
+                        {{ base }}
+                    </option>
+                </select>
                 <select id="catalog-list-select" v-model="selectedCatalog" @change="selectCatalog()">
                     <option disabled value="">select catalog</option>
                     <option v-for="catalog in catalogs">
