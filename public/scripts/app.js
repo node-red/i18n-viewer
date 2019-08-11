@@ -35,22 +35,45 @@ $(function() {
         data: {
             repos: [],
             branches: [],
+            branchesWithNone: [],
             catalogs: [],
+            baseCatalogs: [],
             selectedRepo: '',
             selectedBranch: '',
+            selectedBase: '',
             selectedCatalog: ''
         },
         methods: {
             selectRepo: function() {
                 this.branches = Object.keys(allCatalogs[this.selectedRepo].branches);
+                this.branchesWithNone = this.branches.concat(["-none-"]);
             },
             selectBranch: function() {
                 this.catalogs = allCatalogs[this.selectedRepo].branches[this.selectedBranch].catalogs;
             },
+            selectBase: function() {
+                var base = this.selectedBase;
+                if (base && (base !== "-none-")) {
+                    this.baseCatalogs = allCatalogs[this.selectedRepo].branches[base].catalogs;
+                }
+            },
             selectCatalog: function() {
+                function update(catalogs, baseCatalogs) {
+                    
+                    catalogTable.messages(catalogs, baseCatalogs, !/.json$/.test(context.selectedCatalog));
+                }                
                 var context = this;
-                $.getJSON('/catalog/'+this.selectedRepo+'/'+this.selectedBranch+'/'+this.selectedCatalog, function(catalogs) {
-                    catalogTable.messages(catalogs,!/.json$/.test(context.selectedCatalog));
+                
+                $.getJSON('/catalog/'+this.selectedRepo+'/'+this.selectedBranch+'/'+this.selectedCatalog, function (catalogs) {
+                    var base = context.selectedBase;
+                    if (base && (base !== "-none-")) {
+                        $.getJSON('/catalog/'+context.selectedRepo+'/'+base+'/'+context.selectedCatalog, function (baseCatalogs) {
+                            update(catalogs, baseCatalogs);
+                        });
+                    }
+                    else {
+                        update(catalogs, null);
+                    }
                 });
             }
         }
@@ -160,8 +183,25 @@ $(function() {
                 localStorage.filteredLanguages = JSON.stringify(this.filterLanguages)
             }
         }
-    })
+    });
 
+    function mergeCatalog(catalog, baseCatalog) {
+        if (baseCatalog) {
+            var newCatalog = Object.assign({}, catalog);
+            Object.keys(baseCatalog).forEach(function (key) {
+                var entry = baseCatalog[key];
+                if (entry.hasOwnProperty("en-US")) {
+                    if (!newCatalog.hasOwnProperty(key)) {
+                        newCatalog[key] = {};
+                    }
+                    newCatalog[key]["en-US(base)"] = entry["en-US"];
+                }
+            });
+            return newCatalog;
+        }
+        return catalog;
+    }
+    
     var catalogTable = new Vue({
         el: '#catalogTable',
         data: {
@@ -172,20 +212,22 @@ $(function() {
             filteredLanguages: []
         },
         methods: {
-            messages: function(catalog, plainText) {
+            messages: function(catalog, baseCatalog, plainText) {
                 var messages = [];
                 var langCounts = {};
-                for (var key in catalog) {
-                    var entry = catalog[key];
+                var merged = mergeCatalog(catalog, baseCatalog);
+
+                for (var key in merged) {
+                    var entry = merged[key];
                     Object.keys(entry).forEach(function(k) { langCounts[k] = langCounts[k] || 0; langCounts[k]++ });
                     entry.key = {v:key};
                     messages.push(entry);
                 }
                 var langs = Object.keys(langCounts);
                 langs.sort(function(A,B) {
-                    if (A === 'en-US') {
+                    if ((A === 'en-US(base)') || (A === 'en-US')) {
                         return -1;
-                    } else if (B === 'en-US') {
+                    } else if ((B == 'en-US(base)') || (B === 'en-US')) {
                         return 1;
                     }
                     return A.localeCompare(B);
